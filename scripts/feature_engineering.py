@@ -14,18 +14,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
-# ─────────────────────────────────────────────
 # CONFIGURATION
-# ─────────────────────────────────────────────
 INPUT_FILE  = "outputs/azure_demand_cleaned.csv"
 OUTPUT_CSV  = "outputs/azure_demand_features.csv"
 OUTPUT_PLOT = "outputs/milestone2_usage_trends.png"
 
 os.makedirs("outputs", exist_ok=True)
 
-# ─────────────────────────────────────────────
 # STEP 1 — Load & Sort Data
-# ─────────────────────────────────────────────
 print("Step 1: Loading and sorting data...")
 try:
     df = pd.read_csv(INPUT_FILE)
@@ -46,25 +42,21 @@ df = df.sort_values(["region", "timestamp"]).reset_index(drop=True)
 
 print(f"  Loaded {len(df)} rows | Regions: {df['region'].unique().tolist()}")
 
-# ─────────────────────────────────────────────
 # STEP 2 — Time-Based (Seasonality) Features
-# ─────────────────────────────────────────────
 print("Step 2: Creating time-based features...")
 df["day_of_week"] = df["timestamp"].dt.dayofweek          # 0=Mon … 6=Sun
 df["is_weekend"]  = df["day_of_week"].isin([5, 6]).astype(int)
 df["month"]       = df["timestamp"].dt.month
 df["quarter"]     = df["timestamp"].dt.quarter
 
-# ─────────────────────────────────────────────
 # STEP 3 — Lag Features (Memory of the Past)
-# ─────────────────────────────────────────────
 print("Step 3: Creating lag features (per region)...")
 df["compute_lag_1"] = df.groupby("region")[compute_col].shift(1)
 df["compute_lag_7"] = df.groupby("region")[compute_col].shift(7)
 
-# ─────────────────────────────────────────────
+
 # STEP 4 — Rolling / Trend Features
-# ─────────────────────────────────────────────
+
 print("Step 4: Creating rolling average features (per region)...")
 df["compute_rolling_7"] = (
     df.groupby("region")[compute_col]
@@ -75,9 +67,8 @@ df["storage_rolling_7"] = (
       .transform(lambda x: x.rolling(window=7, min_periods=1).mean())
 )
 
-# ─────────────────────────────────────────────
 # STEP 5 — Spike Detection (Anomaly Signals)
-# ─────────────────────────────────────────────
+
 print("Step 5: Detecting usage spikes...")
 compute_p95 = df[compute_col].quantile(0.95)
 storage_p95 = df[storage_col].quantile(0.95)
@@ -88,26 +79,25 @@ df["storage_spike"]  = (df[storage_col]  > storage_p95).astype(int)
 print(f"  Compute spike threshold (95th pct): {compute_p95:.2f}")
 print(f"  Storage spike threshold (95th pct): {storage_p95:.2f}")
 
-# ─────────────────────────────────────────────
+
 # STEP 6 — Drop Rows with NaN from Lag Features
-# ─────────────────────────────────────────────
+
 print("Step 6: Dropping rows with NaN from lag features...")
 before = len(df)
 df.dropna(subset=["compute_lag_7"], inplace=True)
 df.reset_index(drop=True, inplace=True)
 print(f"  Dropped {before - len(df)} rows | Remaining: {len(df)}")
 
-# ─────────────────────────────────────────────
 # STEP 7 — Save Model-Ready Dataset
-# ─────────────────────────────────────────────
+
 print(f"Step 7: Saving feature dataset to {OUTPUT_CSV}...")
 df.to_csv(OUTPUT_CSV, index=False)
 print(f"  Saved! Shape: {df.shape}")
 print(f"  Columns: {df.columns.tolist()}")
 
-# ─────────────────────────────────────────────
+
 # STEP 8 — Validation Visualization
-# ─────────────────────────────────────────────
+
 print("Step 8: Generating validation plot...")
 
 regions = df["region"].unique()
@@ -155,6 +145,5 @@ plt.tight_layout()
 plt.savefig(OUTPUT_PLOT, dpi=150, bbox_inches="tight")
 print(f"  Plot saved to {OUTPUT_PLOT}")
 
-print("\n✅ Milestone 2 Complete!")
 print(f"   Features CSV : {OUTPUT_CSV}")
 print(f"   Trends Plot  : {OUTPUT_PLOT}")
