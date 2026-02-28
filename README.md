@@ -1,5 +1,5 @@
 #Azure Demand Forecasting & Capacity Optimization System
-Milestone 1: Data Collection & Preparation
+ #Milestone 1: Data Collection & Preparation
 1. Introduction
 
 Modern cloud platforms such as Microsoft Azure must continuously balance infrastructure capacity with dynamic customer demand. Inaccurate capacity planning can lead to increased operational costs or degraded service performance.
@@ -147,11 +147,123 @@ Reproducible preprocessing pipeline
 
 10. Current Project Status
 
-✔ Milestone 1: Completed
-> Milestone 2: Feature Engineering
-> Milestone 3: Forecasting Model Development
-> Milestone 4: Capacity Optimization & Insights
+ Milestone 1: Completed
 
-11. Conclusion
+ #Milestone 2: Feature Engineering & Data Wrangling
+1. Milestone Overview
 
-Milestone 1 successfully establishes a robust data foundation for Azure demand forecasting. The cleaned dataset and validation visualizations ensure data reliability, enabling accurate feature engineering and modeling in subsequent milestones.
+Following the successful preparation of a clean and reliable dataset in Milestone 1,
+Milestone 2 focuses on transforming the data into a model-ready format by engineering meaningful features that capture demand patterns, trends, and anomalies.
+
+This stage enriches the dataset with temporal, statistical, and behavioral signals required for accurate forecasting.
+
+2. Milestone 2 Objectives
+
+The objectives of Milestone 2 are to:
+
+Identify demand-driving patterns in compute and storage usage
+
+Engineer time-based and statistical features for seasonality and trends
+
+Create lag and rolling-window features to capture historical dependencies
+
+Detect abnormal demand spikes for anomaly awareness
+
+Prepare a consistent, feature-rich dataset suitable for machine learning models
+
+3. Feature Engineering Process
+
+The following feature engineering steps were applied:
+
+Time-Based Features
+
+Day of week
+
+Weekend indicator
+
+Month
+
+Quarter
+
+These features help capture weekly and seasonal usage behavior.
+
+Lag Features
+
+1-day lag of compute usage
+
+7-day lag of compute usage
+
+Lag features allow models to learn from historical demand dependencies.
+
+Rolling Statistics
+
+7-day rolling average of compute usage
+
+7-day rolling average of storage usage
+
+Rolling features smooth short-term noise and highlight long-term trends.
+
+Spike Detection
+
+Compute usage spike indicator (above 95th percentile)
+
+Storage usage spike indicator (above 95th percentile)
+
+These features flag unusually high demand periods.
+
+4. Input & Output Artifacts
+
+Input Dataset
+
+outputs/azure_demand_cleaned.csv (from Milestone 1)
+
+Generated Outputs
+
+outputs/azure_demand_features.csv – Feature-engineered dataset
+
+outputs/milestone2_usage_trends.png – Validation visualization of trends and spikes
+
+5. Tools & Technologies Used
+
+Programming Language: Python
+
+Libraries:
+
+Pandas
+
+NumPy
+
+Matplotlib
+
+Development Environment: Visual Studio Code
+
+6. Project Structure (Updated)
+Azure_Demand_Forecast_Output/
+│
+├── scripts/
+│   ├── prepare_data.py
+│   └── feature_engineering.py
+│
+├── outputs/
+│   ├── azure_demand_cleaned.csv
+│   ├── azure_demand_features.csv
+│   ├── usage_over_time.png
+│   └── milestone2_usage_trends.png
+│
+├── requirements.txt
+└── README.md
+7. Execution Instructions (Milestone 2)
+
+To run Milestone 2:
+
+venv\Scripts\activate
+python scripts/feature_engineering.py
+8. Milestone 2 Deliverables
+
+Feature-engineered Azure demand dataset
+
+Lag, rolling, seasonality, and spike features
+
+Validation plots confirming correct feature generation
+
+Model-ready dataset for forecasting algorithms
