@@ -267,3 +267,76 @@ Lag, rolling, seasonality, and spike features
 Validation plots confirming correct feature generation
 
 Model-ready dataset for forecasting algorithms
+
+## Milestone 3: Forecasting Model Development
+
+### Objective
+
+The goal of this milestone is to build and evaluate forecasting models to predict future Azure resource demand based on historical usage data.
+
+### Models Implemented
+
+Two forecasting models were developed and compared:
+
+1. **ARIMA (AutoRegressive Integrated Moving Average)**
+
+   * A statistical time-series forecasting model.
+   * Captures temporal patterns in historical demand data.
+   * Used as a baseline forecasting approach.
+
+2. **XGBoost (Extreme Gradient Boosting)**
+
+   * A machine learning regression model.
+   * Utilizes engineered features such as year, month, and day.
+   * Capable of learning complex nonlinear relationships in the data.
+
+### Model Training Process
+
+The following steps were performed during model development:
+
+* Converted timestamp values into datetime format.
+* Extracted time-based features (year, month, day).
+* Split the dataset into training (80%) and testing (20%) sets.
+* Trained baseline ARIMA and XGBoost models.
+* Applied hyperparameter tuning:
+
+  * Grid search for ARIMA parameters (p, d, q)
+  * GridSearchCV for XGBoost hyperparameters.
+* Generated predictions on the test dataset.
+
+### Evaluation Metrics
+
+Model performance was evaluated using:
+
+* **Root Mean Squared Error (RMSE)**
+
+Lower RMSE indicates better forecasting accuracy.
+
+### Results
+
+After tuning and evaluation:
+
+* ARIMA produced stable baseline predictions.
+* XGBoost captured demand fluctuations more effectively.
+
+Overall, the XGBoost model demonstrated improved forecasting performance compared to ARIMA.
+
+### Visualization
+
+The forecasting results were visualized by comparing:
+
+* Actual demand
+* ARIMA predictions
+* XGBoost predictions
+
+This comparison helps illustrate how well each model captures real demand patterns.
+
+### Output
+
+The final output includes:
+
+* Tuned forecasting models
+* RMSE comparison
+* Demand forecast visualization
+
+These results will be used in the next milestone to derive capacity planning insights and optimization strategies.
