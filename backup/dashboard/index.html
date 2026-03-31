@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure Forecast — Premium SaaS Dashboard</title>
+    <meta name="description" content="Professional Azure demand forecasting dashboard with real-time KPIs, time-series analysis, and regional breakdowns.">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Poppins', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1', // Indigo
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                            950: '#1e1b4b',
+                        },
+                        navy: {
+                            800: '#0f172a',
+                            900: '#0b0f19',
+                            950: '#05070a',
+                        },
+                        accent: {
+                            cyan: '#06b6d4',
+                            emerald: '#10b981',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e',
+                            purple: '#a855f7',
+                        }
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'ping-slow': 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite',
+                        'fade-in-up': 'fadeInUp 0.6s ease-out forwards',
+                        'shimmer': 'shimmer 2s linear infinite',
+                    },
+                    keyframes: {
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        shimmer: {
+                            '0%': { backgroundPosition: '-200% 0' },
+                            '100%': { backgroundPosition: '200% 0' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass-panel {
+                @apply bg-navy-800/60 backdrop-blur-xl border border-white/5 shadow-xl;
+            }
+            .glass-panel-hover {
+                @apply hover:-translate-y-1 hover:border-brand-500/30 hover:shadow-brand-500/20 transition-all duration-300;
+            }
+            .text-gradient {
+                @apply bg-clip-text text-transparent bg-gradient-to-r;
+            }
+        }
+
+        /* Animated grid background */
+        .bg-grid-pattern {
+            background-image: 
+                linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* Glowing orbs positioning */
+        .orb-1 { top: -10%; left: -10%; width: 40vw; height: 40vw; background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%); }
+        .orb-2 { bottom: -20%; right: -10%; width: 50vw; height: 50vw; background: radial-gradient(circle, rgba(168,85,247,0.1) 0%, transparent 70%); }
+        .orb-3 { top: 40%; left: 30%; width: 30vw; height: 30vw; background: radial-gradient(circle, rgba(6,182,212,0.08) 0%, transparent 70%); }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0b0f19; }
+        ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.6); }
+
+        /* Top colored glowing border for KPI cards */
+        .kpi-border-1::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #6366f1, #a855f7); box-shadow: 0 0 10px rgba(99,102,241,0.5); }
+        .kpi-border-2::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #06b6d4, #10b981); box-shadow: 0 0 10px rgba(6,182,212,0.5); }
+        .kpi-border-3::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #f59e0b, #f97316); box-shadow: 0 0 10px rgba(245,158,11,0.5); }
+        .kpi-border-4::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #f43f5e, #e11d48); box-shadow: 0 0 10px rgba(244,63,94,0.5); }
+    </style>
+</head>
+<body class="bg-navy-950 text-slate-200 min-h-screen relative overflow-x-hidden selection:bg-brand-500/30">
+
+    <!-- Ambient Background Effects -->
+    <div class="fixed inset-0 pointer-events-none z-0">
+        <div class="absolute inset-0 bg-gradient-to-b from-navy-900 to-navy-950"></div>
+        <div class="absolute inset-0 bg-grid-pattern opacity-50"></div>
+        <div class="absolute orb-1 rounded-full blur-3xl mix-blend-screen"></div>
+        <div class="absolute orb-2 rounded-full blur-3xl mix-blend-screen"></div>
+        <div class="absolute orb-3 rounded-full blur-3xl mix-blend-screen animate-pulse-slow"></div>
+    </div>
+
+    <!-- Initialization Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-navy-950 z-50 flex flex-col items-center justify-center transition-all duration-700">
+        <div class="relative w-24 h-24 flex items-center justify-center mb-6">
+            <div class="absolute inset-0 border-4 border-white/10 rounded-full"></div>
+            <div class="absolute inset-0 border-4 border-brand-500 rounded-full border-t-transparent animate-spin shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
+            <span class="text-3xl">⚡</span>
+        </div>
+        <h2 class="text-xl font-display font-semibold text-white tracking-wide">Initializing Forecast Engine</h2>
+        <div class="mt-4 w-48 h-1 bg-white/10 rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-brand-500 to-accent-purple w-full animate-shimmer scale-x-150 origin-left"></div>
+        </div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav class="sticky top-0 z-40 w-full glass-panel border-b border-white/5 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-accent-purple flex items-center justify-center text-xl shadow-[0_0_15px_rgba(99,102,241,0.4)]">
+                ⚡
+            </div>
+            <div>
+                <h1 class="text-lg font-display font-bold text-white tracking-tight leading-tight">Azure Forecast</h1>
+                <p class="text-xs text-brand-300 uppercase tracking-widest font-medium">Demand Intelligence</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-6">
+            <div id="navStatus" class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                <span class="relative flex h-2.5 w-2.5">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+                <span class="text-xs font-semibold text-emerald-400 tracking-wide">System Online</span>
+            </div>
+            <div class="text-xs text-slate-400 border-l border-white/10 pl-6 py-1">
+                Last Sync: <span id="lastUpdated" class="text-white font-medium">--:--</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Layout -->
+    <main class="relative z-10 max-w-7xl mx-auto px-6 py-8 space-y-8 pb-20">
+
+        <!-- Section 1: KPI Cards -->
+        <section class="opacity-0 animate-fade-in-up" style="animation-delay: 0.1s;">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Total Demand -->
+                <div class="relative glass-panel rounded-2xl p-6 overflow-hidden glass-panel-hover kpi-border-1 group">
+                    <div class="flex justify-between items-start mb-4">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Forecast Demand</p>
+                        <div class="w-10 h-10 rounded-lg bg-brand-500/10 flex items-center justify-center text-xl text-brand-400 group-hover:scale-110 group-hover:bg-brand-500/20 transition-all duration-300">
+                            📈
+                        </div>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <h2 id="kpiTotalValue" class="text-4xl font-display font-bold text-white">—</h2>
+                    </div>
+                    <p id="kpiTotalSub" class="text-sm text-slate-500 mt-2 font-medium">Loading data...</p>
+                </div>
+
+                <!-- Peak Day -->
+                <div class="relative glass-panel rounded-2xl p-6 overflow-hidden glass-panel-hover kpi-border-2 group">
+                    <div class="flex justify-between items-start mb-4">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Peak Forecast Day</p>
+                        <div class="w-10 h-10 rounded-lg bg-accent-cyan/10 flex items-center justify-center text-xl text-accent-cyan group-hover:scale-110 group-hover:bg-accent-cyan/20 transition-all duration-300">
+                            🔥
+                        </div>
+                    </div>
+                    <div>
+                        <h2 id="kpiPeakValue" class="text-4xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-accent-cyan to-brand-300">—</h2>
+                    </div>
+                    <p id="kpiPeakSub" class="text-sm text-slate-500 mt-2 font-medium">Highest demand date</p>
+                </div>
+
+                <!-- Growth Trend -->
+                <div class="relative glass-panel rounded-2xl p-6 overflow-hidden glass-panel-hover kpi-border-3 group">
+                    <div class="flex justify-between items-start mb-4">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Growth Trend</p>
+                        <div class="w-10 h-10 rounded-lg bg-accent-amber/10 flex items-center justify-center text-xl text-accent-amber group-hover:scale-110 group-hover:bg-accent-amber/20 transition-all duration-300">
+                            📊
+                        </div>
+                    </div>
+                    <div>
+                        <h2 id="kpiGrowthValue" class="text-4xl font-display font-bold text-white">—</h2>
+                    </div>
+                    <div id="kpiGrowthSub" class="mt-2 text-sm font-medium">
+                        <span class="text-slate-500">Month-over-month</span>
+                    </div>
+                </div>
+
+                <!-- RMSE Status -->
+                <div class="relative glass-panel rounded-2xl p-6 overflow-hidden glass-panel-hover kpi-border-4 group">
+                    <div class="flex justify-between items-start mb-4">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Model RMSE</p>
+                        <div class="w-10 h-10 rounded-lg bg-accent-rose/10 flex items-center justify-center text-xl text-accent-rose group-hover:scale-110 group-hover:bg-accent-rose/20 transition-all duration-300">
+                            🎯
+                        </div>
+                    </div>
+                    <div>
+                        <h2 id="kpiRMSEValue" class="text-4xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-accent-rose to-accent-purple">—</h2>
+                    </div>
+                    <p id="kpiRMSESub" class="text-sm text-slate-500 mt-2 font-medium">Prediction accuracy</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dynamic Alert Banner -->
+        <div id="alertContainer" class="hidden opacity-0 animate-fade-in-up" style="animation-delay: 0.2s;">
+            <div id="alertBanner" class="p-4 rounded-xl flex items-center gap-4 shadow-lg border relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent flex -translate-x-full animate-[shimmer_3s_infinite]"></div>
+                <div id="alertIcon" class="text-2xl z-10">⚠️</div>
+                <div class="font-medium tracking-wide z-10" id="alertMessage">Loading system status...</div>
+            </div>
+        </div>
+
+        <!-- Section 2: Primary Time Series -->
+        <section class="opacity-0 animate-fade-in-up" style="animation-delay: 0.3s;">
+            <div class="glass-panel rounded-2xl p-6 glass-panel-hover">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-xl bg-brand-500/10 flex items-center justify-center text-2xl text-brand-400 border border-brand-500/20 shadow-[0_0_15px_rgba(99,102,241,0.2)]">📉</div>
+                        <div>
+                            <h3 class="text-lg font-display font-semibold text-white">Actual vs Forecast Demand</h3>
+                            <p class="text-sm text-slate-400 font-medium">Daily aggregated demand across all regions</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative h-[400px] w-full">
+                    <canvas id="timeSeriesChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Dual Charts -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-8 opacity-0 animate-fade-in-up" style="animation-delay: 0.4s;">
+            
+            <!-- Region Chart -->
+            <div class="glass-panel rounded-2xl p-6 glass-panel-hover">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 rounded-xl bg-accent-cyan/10 flex items-center justify-center text-xl text-accent-cyan border border-accent-cyan/20">🌍</div>
+                    <div>
+                        <h3 class="text-base font-display font-semibold text-white">Region-wise Distribution</h3>
+                        <p class="text-xs text-slate-400 font-medium mt-0.5">Actual vs Forecast totals by region</p>
+                    </div>
+                </div>
+                <div class="relative h-[300px] w-full">
+                    <canvas id="regionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Service Breakdown -->
+            <div class="glass-panel rounded-2xl p-6 glass-panel-hover">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 rounded-xl bg-accent-purple/10 flex items-center justify-center text-xl text-accent-purple border border-accent-purple/20">🔧</div>
+                    <div>
+                        <h3 class="text-base font-display font-semibold text-white">Service Portfolio Matrix</h3>
+                        <p class="text-xs text-slate-400 font-medium mt-0.5">Forecast demand scaled by service category</p>
+                    </div>
+                </div>
+                <div class="relative h-[300px] w-full">
+                    <canvas id="serviceChart"></canvas>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Section 4: Secondary Dual Charts & Monitoring Details -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-8 opacity-0 animate-fade-in-up" style="animation-delay: 0.5s;">
+            
+            <!-- Monthly Trend -->
+            <div class="glass-panel rounded-2xl p-6 glass-panel-hover lg:col-span-2">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 rounded-xl bg-accent-amber/10 flex items-center justify-center text-xl text-accent-amber border border-accent-amber/20">📅</div>
+                    <div>
+                        <h3 class="text-base font-display font-semibold text-white">Monthly Trend Analysis</h3>
+                        <p class="text-xs text-slate-400 font-medium mt-0.5">Averaged performance trajectories</p>
+                    </div>
+                </div>
+                <div class="relative h-[280px] w-full">
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Error Distribution -->
+            <div class="glass-panel rounded-2xl p-6 glass-panel-hover flex flex-col">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 rounded-xl bg-accent-rose/10 flex items-center justify-center text-xl text-accent-rose border border-accent-rose/20">📊</div>
+                    <div>
+                        <h3 class="text-base font-display font-semibold text-white">Residual Distribution</h3>
+                        <p class="text-xs text-slate-400 font-medium mt-0.5">Forecast error spread</p>
+                    </div>
+                </div>
+                <div class="relative flex-1 w-full min-h-[220px]">
+                    <canvas id="errorChart"></canvas>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Section 5: Precision Monitoring Array -->
+        <section class="opacity-0 animate-fade-in-up" style="animation-delay: 0.6s;">
+            <div class="flex items-center gap-4 mb-6 mt-6">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">Diagnostic Array</h3>
+                <div class="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass-panel rounded-2xl p-6 text-center group cursor-default">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 group-hover:text-white transition-colors">RMSE Metric</p>
+                    <h4 id="monRMSE" class="text-5xl font-display font-bold text-white mb-2 tracking-tighter">—</h4>
+                    <p class="text-xs text-slate-400 font-medium">Root Mean Square Error</p>
+                </div>
+                <div class="glass-panel rounded-2xl p-6 text-center group cursor-default">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 group-hover:text-white transition-colors">MAE Metric</p>
+                    <h4 id="monMAE" class="text-5xl font-display font-bold text-white mb-2 tracking-tighter">—</h4>
+                    <p class="text-xs text-slate-400 font-medium">Mean Absolute Error</p>
+                </div>
+                <div class="glass-panel rounded-2xl p-6 text-center group cursor-default">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 group-hover:text-white transition-colors">MAPE Metric</p>
+                    <h4 id="monMAPE" class="text-5xl font-display font-bold text-white mb-2 tracking-tighter">—</h4>
+                    <p class="text-xs text-slate-400 font-medium">Mean Absolute % Error</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Application Script -->
+    <script>
+        const API_BASE = 'http://localhost:8000';
+
+        // ─── Chart.js Premium Configuration ───
+        Chart.defaults.color = '#94a3b8'; // text-slate-400
+        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.05)';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.font.size = 12;
+
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
+            },
+            plugins: {
+                legend: {
+                    labels: { 
+                        usePointStyle: true, 
+                        pointStyle: 'circle', 
+                        padding: 24, 
+                        font: { size: 12, weight: '500', family: "'Inter', sans-serif" },
+                        color: '#cbd5e1' // text-slate-300
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)', // bg-navy-800
+                    titleFont: { size: 13, weight: '600', family: "'Poppins', sans-serif" },
+                    bodyFont: { size: 12 },
+                    padding: 16,
+                    cornerRadius: 12,
+                    borderColor: 'rgba(99, 102, 241, 0.3)', // brand-500 border
+                    borderWidth: 1,
+                    boxPadding: 6,
+                    usePointStyle: true
+                }
+            }
+        };
+
+        // Utility to generate canvas gradients
+        function createGradient(ctx, colorStart, colorEnd, horizontal = false) {
+            const gradient = ctx.createLinearGradient(0, 0, horizontal ? 500 : 0, horizontal ? 0 : 400);
+            gradient.addColorStop(0, colorStart);
+            gradient.addColorStop(1, colorEnd);
+            return gradient;
+        }
+
+        // ─── Core Logic ───
+        async function init() {
+            try {
+                // Fetch Data concurrently
+                const [forecastRes, monitorRes] = await Promise.all([
+                    fetch(`${API_BASE}/forecast-data`),
+                    fetch(`${API_BASE}/monitoring`)
+                ]);
+
+                if (!forecastRes.ok || !monitorRes.ok) throw new Error('API communication error');
+
+                const forecast = await forecastRes.json();
+                const monitor = await monitorRes.json();
+
+                // Process & Render
+                renderKPIs(forecast, monitor);
+                renderAlertBanner(monitor);
+                renderTimeSeries(forecast);
+                renderRegionChart(forecast);
+                renderServiceChart(forecast);
+                renderMonthlyChart(forecast);
+                renderErrorChart(forecast);
+                renderMonitoringDetailed(monitor);
+
+                // Update timestamps
+                const now = new Date();
+                document.getElementById('lastUpdated').textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            } catch (err) {
+                console.error('Initialisation sequence failed:', err);
+                const banner = document.getElementById('alertBanner');
+                const container = document.getElementById('alertContainer');
+                container.classList.remove('hidden');
+                
+                banner.className = 'p-4 rounded-xl flex items-center gap-4 border relative overflow-hidden bg-rose-500/10 border-rose-500/30 text-rose-400 shadow-[0_0_20px_rgba(244,63,94,0.15)]';
+                document.getElementById('alertIcon').textContent = '⚠️';
+                document.getElementById('alertMessage').innerHTML = '<span class="font-semibold">Core Offline:</span> Unable to establish telemetry connection to port 8000.';
+                
+                document.getElementById('navStatus').className = "flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20";
+                document.getElementById('navStatus').innerHTML = `<span class="h-2.5 w-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]"></span><span class="text-xs font-semibold text-rose-400 tracking-wide">System Degraded</span>`;
+            } finally {
+                // Remove loading overlay smoothly
+                const overlay = document.getElementById('loadingOverlay');
+                overlay.style.opacity = '0';
+                setTimeout(() => overlay.remove(), 700);
+            }
+        }
+
+        // ─── Rendering Functions ───
+
+        function renderKPIs(data, monitor) {
+            // Total Forecast
+            const total = data.reduce((sum, r) => sum + r.forecast, 0);
+            document.getElementById('kpiTotalValue').textContent = Math.round(total).toLocaleString();
+
+            // Peak Day
+            const daily = {};
+            data.forEach(r => { daily[r.date] = (daily[r.date] || 0) + r.forecast; });
+            const peak = Object.entries(daily).sort((a, b) => b[1] - a[1])[0];
+            if (peak) {
+                const pd = new Date(peak[0]);
+                document.getElementById('kpiPeakValue').textContent = pd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                document.getElementById('kpiPeakSub').innerHTML = `Peak: <span class="text-white">${Math.round(peak[1]).toLocaleString()}</span> units`;
+            }
+
+            // Growth Trend
+            const months = {};
+            data.forEach(r => {
+                const m = r.date.substring(0, 7);
+                months[m] = (months[m] || 0) + r.forecast;
+            });
+            const mKeys = Object.keys(months).sort();
+            if (mKeys.length >= 2) {
+                const curr = months[mKeys[mKeys.length - 1]];
+                const prev = months[mKeys[mKeys.length - 2]];
+                const percent = ((curr - prev) / prev * 100).toFixed(1);
+                
+                const valEl = document.getElementById('kpiGrowthValue');
+                const subEl = document.getElementById('kpiGrowthSub');
+                
+                if (percent >= 0) {
+                    valEl.textContent = `+${percent}%`;
+                    valEl.className = "text-4xl font-display font-bold text-emerald-400";
+                    subEl.innerHTML = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">▲ Growing</span>`;
+                } else {
+                    valEl.textContent = `${percent}%`;
+                    valEl.className = "text-4xl font-display font-bold text-rose-400";
+                    subEl.innerHTML = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-500/10 text-rose-400 text-xs font-bold border border-rose-500/20">▼ Declining</span>`;
+                }
+            }
+
+            // RMSE
+            document.getElementById('kpiRMSEValue').textContent = monitor.rmse.toFixed(1);
+            if (monitor.alert) {
+                document.getElementById('kpiRMSESub').innerHTML = `<span class="text-amber-400 font-medium">⚠️ Exceeds Threshold</span>`;
+            } else {
+                document.getElementById('kpiRMSESub').innerHTML = `<span class="text-emerald-400 font-medium">✓ Nominal Efficiency</span>`;
+            }
+        }
+
+        function renderAlertBanner(monitor) {
+            const container = document.getElementById('alertContainer');
+            const banner = document.getElementById('alertBanner');
+            const icon = document.getElementById('alertIcon');
+            const msg = document.getElementById('alertMessage');
+            
+            container.classList.remove('hidden');
+
+            if (monitor.alert) {
+                banner.className = 'p-4 rounded-xl flex items-center gap-4 relative overflow-hidden bg-amber-500/10 border border-amber-500/30 text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.1)]';
+                icon.textContent = '⚠️';
+                msg.innerHTML = `<span class="font-bold text-amber-300">Action Required:</span> RMSE protocol violation (${monitor.rmse.toFixed(1)}). Retraining iteration highly recommended.`;
+                
+                const pulseDiv = document.createElement('div');
+                pulseDiv.className = 'absolute inset-0 border-2 border-amber-500/40 rounded-xl animate-ping-slow pointer-events-none';
+                banner.appendChild(pulseDiv);
+            } else {
+                banner.className = 'p-4 rounded-xl flex items-center gap-4 relative overflow-hidden bg-emerald-500/10 border border-emerald-500/20 text-emerald-400';
+                icon.textContent = '✅';
+                msg.innerHTML = `<span class="font-bold text-emerald-300">All Systems Nominal:</span> Current models are performing within acceptable accuracy thresholds.`;
+            }
+        }
+
+        function renderTimeSeries(data) {
+            const actual = {}; const forecast = {};
+            data.forEach(r => {
+                actual[r.date] = (actual[r.date] || 0) + r.actual;
+                forecast[r.date] = (forecast[r.date] || 0) + r.forecast;
+            });
+            const dates = Object.keys(actual).sort();
+            
+            const ctx = document.getElementById('timeSeriesChart').getContext('2d');
+            const bgGradientForecast = createGradient(ctx, 'rgba(16, 185, 129, 0.15)', 'rgba(16, 185, 129, 0)');
+            const bgGradientActual = createGradient(ctx, 'rgba(99, 102, 241, 0.2)', 'rgba(99, 102, 241, 0)');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Actual Demand',
+                            data: dates.map(d => actual[d]),
+                            borderColor: '#6366f1', // brand-500
+                            backgroundColor: bgGradientActual,
+                            borderWidth: 2.5,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            pointHoverRadius: 6,
+                            pointHoverBackgroundColor: '#ffffff'
+                        },
+                        {
+                            label: 'Forecast Trajectory',
+                            data: dates.map(d => forecast[d]),
+                            borderColor: '#10b981', // emerald-500
+                            backgroundColor: bgGradientForecast,
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            pointHoverRadius: 6,
+                            pointHoverBackgroundColor: '#ffffff',
+                            borderDash: [5, 5]
+                        }
+                    ]
+                },
+                options: {
+                    ...commonOptions,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: { unit: 'month', displayFormats: { month: 'MMM yyyy' } },
+                            grid: { display: false, drawBorder: false },
+                            ticks: { maxRotation: 0, padding: 10 }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)', drawBorder: false },
+                            ticks: { callback: v => v.toLocaleString(), padding: 10 }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderRegionChart(data) {
+            const regionData = {};
+            data.forEach(r => {
+                if (!regionData[r.region]) regionData[r.region] = { a: 0, f: 0 };
+                regionData[r.region].a += r.actual;
+                regionData[r.region].f += r.forecast;
+            });
+            const regions = Object.keys(regionData).sort();
+
+            const ctx = document.getElementById('regionChart').getContext('2d');
+            const gradActual = createGradient(ctx, '#6366f1', '#4338ca');
+            const gradForecast = createGradient(ctx, '#06b6d4', '#0891b2');
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: regions,
+                    datasets: [
+                        {
+                            label: 'Captured Actuals',
+                            data: regions.map(r => regionData[r].a),
+                            backgroundColor: gradActual,
+                            borderRadius: 8,
+                            barPercentage: 0.6,
+                            categoryPercentage: 0.7
+                        },
+                        {
+                            label: 'Projected Forecast',
+                            data: regions.map(r => regionData[r].f),
+                            backgroundColor: gradForecast,
+                            borderRadius: 8,
+                            barPercentage: 0.6,
+                            categoryPercentage: 0.7
+                        }
+                    ]
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        x: { grid: { display: false, drawBorder: false } },
+                        y: { 
+                            grid: { color: 'rgba(255, 255, 255, 0.05)', drawBorder: false },
+                            ticks: { callback: v => (v / 1000).toFixed(0) + 'K' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderServiceChart(data) {
+            const serviceData = {};
+            data.forEach(r => {
+                const svc = r.service_type || 'Compute';
+                if (!serviceData[svc]) serviceData[svc] = {};
+                const m = r.date.substring(0, 7);
+                serviceData[svc][m] = (serviceData[svc][m] || 0) + r.forecast;
+            });
+
+            const months = [...new Set(data.map(r => r.date.substring(0, 7)))].sort();
+            const services = Object.keys(serviceData).sort();
+            
+            const ctx = document.getElementById('serviceChart').getContext('2d');
+            const gradients = [
+                createGradient(ctx, '#6366f1', '#4338ca'), // brand
+                createGradient(ctx, '#06b6d4', '#0891b2'), // cyan
+                createGradient(ctx, '#a855f7', '#7e22ce'), // purple
+                createGradient(ctx, '#f59e0b', '#d97706'), // amber
+                createGradient(ctx, '#f43f5e', '#be123c')  // rose
+            ];
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months.map(m => {
+                        const [y, mo] = m.split('-');
+                        return new Date(y, mo - 1).toLocaleDateString('en-US', { month: 'short' });
+                    }),
+                    datasets: services.map((svc, i) => ({
+                        label: svc,
+                        data: months.map(m => serviceData[svc][m] || 0),
+                        backgroundColor: gradients[i % gradients.length],
+                        borderRadius: 4,
+                        borderSkipped: false
+                    }))
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        x: { stacked: true, grid: { display: false, drawBorder: false } },
+                        y: {
+                            stacked: true,
+                            grid: { color: 'rgba(255, 255, 255, 0.05)', drawBorder: false },
+                            ticks: { callback: v => (v / 1000).toFixed(0) + 'K' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderMonthlyChart(data) {
+            const avgActual = {}; const avgForecast = {}; const counts = {};
+            data.forEach(r => {
+                const m = r.date.substring(0, 7);
+                avgActual[m] = (avgActual[m] || 0) + r.actual;
+                avgForecast[m] = (avgForecast[m] || 0) + r.forecast;
+                counts[m] = (counts[m] || 0) + 1;
+            });
+
+            const months = Object.keys(avgActual).sort();
+            const labels = months.map(m => {
+                const [y, mo] = m.split('-');
+                return new Date(y, mo - 1).toLocaleDateString('en-US', { month: 'short' });
+            });
+
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+            const bgGradAmber = createGradient(ctx, 'rgba(245, 158, 11, 0.2)', 'rgba(245, 158, 11, 0)');
+            const bgGradPurple = createGradient(ctx, 'rgba(168, 85, 247, 0.2)', 'rgba(168, 85, 247, 0)');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Measured Avg',
+                            data: months.map(m => Math.round(avgActual[m] / counts[m])),
+                            borderColor: '#f59e0b',
+                            backgroundColor: bgGradAmber,
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#0f172a',
+                            pointBorderColor: '#f59e0b',
+                            pointBorderWidth: 2,
+                            pointHoverRadius: 7
+                        },
+                        {
+                            label: 'Predicted Avg',
+                            data: months.map(m => Math.round(avgForecast[m] / counts[m])),
+                            borderColor: '#a855f7',
+                            backgroundColor: bgGradPurple,
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#0f172a',
+                            pointBorderColor: '#a855f7',
+                            pointBorderWidth: 2,
+                            pointHoverRadius: 7
+                        }
+                    ]
+                },
+                options: {
+                    ...commonOptions,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        x: { grid: { display: false, drawBorder: false } },
+                        y: { grid: { color: 'rgba(255, 255, 255, 0.05)', drawBorder: false } }
+                    }
+                }
+            });
+        }
+
+        function renderErrorChart(data) {
+            const bins = { '< -100': 0, '-100 to -50': 0, '-50 to 0': 0, '0 to 50': 0, '50 to 100': 0, '> 100': 0 };
+            data.forEach(r => {
+                const err = r.actual - r.forecast;
+                if (err < -100) bins['< -100']++;
+                else if (err < -50) bins['-100 to -50']++;
+                else if (err < 0) bins['-50 to 0']++;
+                else if (err < 50) bins['0 to 50']++;
+                else if (err < 100) bins['50 to 100']++;
+                else bins['> 100']++;
+            });
+
+            const ctx = document.getElementById('errorChart').getContext('2d');
+            const bars = [
+                createGradient(ctx, '#f43f5e', '#be123c'), // rose (bad)
+                createGradient(ctx, '#f59e0b', '#d97706'), // amber (warn)
+                createGradient(ctx, '#10b981', '#047857'), // emerald (good)
+                createGradient(ctx, '#10b981', '#047857'), // emerald (good)
+                createGradient(ctx, '#f59e0b', '#d97706'), // amber (warn)
+                createGradient(ctx, '#f43f5e', '#be123c')  // rose (bad)
+            ];
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(bins),
+                    datasets: [{
+                        label: 'Distribution Freq',
+                        data: Object.values(bins),
+                        backgroundColor: bars,
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    ...commonOptions,
+                    plugins: {
+                        ...commonOptions.plugins,
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { grid: { display: false, drawBorder: false } },
+                        y: { grid: { color: 'rgba(255, 255, 255, 0.05)', drawBorder: false } }
+                    }
+                }
+            });
+        }
+
+        function renderMonitoringDetailed(monitor) {
+            // RMSE
+            const rmseEl = document.getElementById('monRMSE');
+            rmseEl.textContent = monitor.rmse.toFixed(1);
+            rmseEl.className = `text-5xl font-display font-bold mb-2 tracking-tighter transition-colors duration-500 ${monitor.rmse < 100 ? 'text-emerald-400 drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]' : monitor.rmse < 150 ? 'text-amber-400 drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'text-rose-400 drop-shadow-[0_0_10px_rgba(244,63,94,0.5)]'}`;
+
+            // MAE
+            const maeEl = document.getElementById('monMAE');
+            maeEl.textContent = monitor.mae.toFixed(1);
+            maeEl.className = `text-5xl font-display font-bold mb-2 tracking-tighter transition-colors duration-500 ${monitor.mae < 80 ? 'text-emerald-400 drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]' : monitor.mae < 120 ? 'text-amber-400 drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'text-rose-400 drop-shadow-[0_0_10px_rgba(244,63,94,0.5)]'}`;
+
+            // MAPE
+            const mapeEl = document.getElementById('monMAPE');
+            mapeEl.textContent = monitor.mape.toFixed(1) + '%';
+            mapeEl.className = `text-5xl font-display font-bold mb-2 tracking-tighter transition-colors duration-500 ${monitor.mape < 10 ? 'text-emerald-400 drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]' : monitor.mape < 20 ? 'text-amber-400 drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'text-rose-400 drop-shadow-[0_0_10px_rgba(244,63,94,0.5)]'}`;
+        }
+
+        // Fire sequence
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

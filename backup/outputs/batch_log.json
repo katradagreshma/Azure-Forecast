@@ -1,0 +1,11 @@
+[
+  {
+    "timestamp": "2026-03-31T21:45:01.239839",
+    "status": "success",
+    "records_processed": 819,
+    "rmse": 198.67,
+    "mae": 158.12,
+    "duration_seconds": 38.07,
+    "output_file": "C:\\Users\\Anonymous\\Downloads\\Azure-Forecast-main\\outputs\\forecast_output.csv"
+  }
+]

@@ -1,0 +1,26 @@
+{
+  "rmse": 198.67,
+  "mae": 158.12,
+  "mape": 17.73,
+  "r_squared": 0.1046,
+  "total_records": 819,
+  "alert": true,
+  "threshold": 150.0,
+  "region_metrics": {
+    "East US": {
+      "rmse": 244.54,
+      "mae": 205.92,
+      "count": 273
+    },
+    "West Europe": {
+      "rmse": 200.94,
+      "mae": 181.58,
+      "count": 273
+    },
+    "Central India": {
+      "rmse": 135.03,
+      "mae": 86.87,
+      "count": 273
+    }
+  }
+}
