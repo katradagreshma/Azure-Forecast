@@ -435,7 +435,20 @@ def style(fig, height=None):
 def load_and_engineer():
     path = os.path.join("outputs", "forecast_output.csv")
     if not os.path.exists(path):
-        return pd.DataFrame(), pd.DataFrame()
+        # Fallback for Streamlit Cloud: Run batch prediction dynamically if file is missing
+        import subprocess
+        try:
+            subprocess.run(["python", "backup/batch/batch_predict.py"], check=False)
+            if not os.path.exists(path):
+                subprocess.run(["python", "batch/batch_predict.py"], check=False) # Try alternative path
+        except Exception:
+            pass
+        
+        if not os.path.exists(path):
+            path = os.path.join("backup", "outputs", "forecast_output.csv")
+            
+        if not os.path.exists(path):
+            return pd.DataFrame(), pd.DataFrame()
 
     df = pd.read_csv(path)
     df['date'] = pd.to_datetime(df['date'])
